@@ -9,6 +9,7 @@ type AuthState = {
     user: AuthResponse | null;
     loading: boolean;
     error?: string;
+    _hasHydrated: boolean;
 };
 
 type AuthActions = {
@@ -16,6 +17,7 @@ type AuthActions = {
     login: (payload: AuthRequest) => Promise<void>;
     logout: () => void;
     me: () => Promise<void>;
+    setHasHydrated: (state: boolean) => void;
 };
 
 export const useAuthStore = create<AuthState & AuthActions>()(
@@ -23,6 +25,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         (set, get) => ({
             user: null,
             loading: false,
+            _hasHydrated: false,
+
+            setHasHydrated: (state) => {
+                set({ _hasHydrated: state });
+            },
 
             async register(payload) {
                 try {
@@ -74,6 +81,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
                 }
             },
         }),
-        { name: "jirouille-auth" }
+        {
+            name: "jirouille-auth",
+            onRehydrateStorage: () => (state) => {
+                state?.setHasHydrated(true);
+            },
+        }
     )
 );
