@@ -4,7 +4,6 @@ function parseErrorMessage(errorText: string): string {
     try {
         const parsed = JSON.parse(errorText);
 
-        // Si c'est une erreur Zod avec un tableau d'erreurs
         if (parsed.error) {
             try {
                 const zodErrors = JSON.parse(parsed.error);
@@ -12,20 +11,16 @@ function parseErrorMessage(errorText: string): string {
                     return zodErrors[0].message || "Validation error";
                 }
             } catch {
-                // Si c'est pas du JSON, retourner l'erreur directement
                 return parsed.error;
             }
         }
 
-        // Si c'est un objet avec un message
         if (parsed.message) {
             return parsed.message;
         }
 
-        // Sinon retourner l'erreur brute
         return errorText;
     } catch {
-        // Si c'est pas du JSON, retourner tel quel
         return errorText;
     }
 }
