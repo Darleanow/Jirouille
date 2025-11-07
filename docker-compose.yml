@@ -1,29 +1,28 @@
 services:
-  server:
-    build: ./server
-    env_file:
-      - ./server/.env
-    volumes:
-      - ./server/data:/usr/src/app/data
-    networks:
-      - app-net
-    restart: unless-stopped
-    ports:
-      - "3001:3001"
+    server:
+        build: ./server
+        env_file:
+            - ./server/.env
+        volumes:
+            - ./server/data:/usr/src/app/data
+        networks:
+            - app-net
+        restart: unless-stopped
+        ports:
+            - "3001:3001"
 
-  client:
-    build: ./client
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3001
-    depends_on:
-      - server
-    networks:
-      - app-net
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
+    client:
+        build: ./client
+        environment:
+            - NEXT_PUBLIC_API_URL=http://localhost:3001
+        depends_on:
+            - server
+        networks:
+            - app-net
+        restart: unless-stopped
+        ports:
+            - "3000:3000"
 
 networks:
-  app-net:
-    driver: bridge
-
+    app-net:
+        driver: bridge
