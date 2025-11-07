@@ -4,6 +4,11 @@ import crypto from "crypto";
 import { z } from "zod";
 import { db } from "./db";
 import { log } from "./logger";
+import {
+    broadcastTaskCreated,
+    broadcastTaskUpdated,
+    broadcastTaskDeleted,
+} from "./ws";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
@@ -58,6 +63,9 @@ router.post("/", async (req, res) => {
 
         const task = await db.get("SELECT * FROM tasks WHERE id = ?", id);
         log("tasks", "info", "task_created", { id, userId });
+
+        broadcastTaskCreated(task);
+
         res.json(task);
     } catch (e: any) {
         res.status(400).json({ error: e.message });
@@ -92,6 +100,9 @@ router.put("/:id", async (req, res) => {
             req.params.id
         );
         log("tasks", "info", "task_updated", { id: req.params.id, userId });
+
+        broadcastTaskUpdated(updated);
+
         res.json(updated);
     } catch (e: any) {
         res.status(400).json({ error: e.message });
@@ -111,6 +122,9 @@ router.delete("/:id", async (req, res) => {
 
     await db.run("DELETE FROM tasks WHERE id = ?", req.params.id);
     log("tasks", "info", "task_deleted", { id: req.params.id, userId });
+
+    broadcastTaskDeleted(req.params.id);
+
     res.json({ ok: true });
 });
 

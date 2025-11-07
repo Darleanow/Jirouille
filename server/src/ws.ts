@@ -9,6 +9,10 @@ import type {
     WebSocketPresence,
     WebSocketWelcome,
     WebSocketPong,
+    WebSocketTaskCreated,
+    WebSocketTaskUpdated,
+    WebSocketTaskDeleted,
+    Task,
 } from "./types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
@@ -37,6 +41,31 @@ function presence(): WebSocketPresence {
             username: c.username ?? "guest",
         })),
     };
+}
+
+/** Broadcast task events to all authenticated users */
+export function broadcastTaskCreated(task: Task) {
+    const msg: WebSocketTaskCreated = {
+        type: "task-created",
+        task,
+    };
+    broadcast(msg);
+}
+
+export function broadcastTaskUpdated(task: Task) {
+    const msg: WebSocketTaskUpdated = {
+        type: "task-updated",
+        task,
+    };
+    broadcast(msg);
+}
+
+export function broadcastTaskDeleted(taskId: string) {
+    const msg: WebSocketTaskDeleted = {
+        type: "task-deleted",
+        taskId,
+    };
+    broadcast(msg);
 }
 
 export function attachWebSocket(server: any) {

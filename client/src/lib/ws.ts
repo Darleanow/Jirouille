@@ -27,13 +27,19 @@ export function connectWS(
     let pingIntervalId: ReturnType<typeof setInterval> | null = null;
 
     ws.onopen = () => {
+        console.log("WebSocket connected");
         pingIntervalId = setInterval(sendPing, 5000);
     };
 
     ws.onclose = () => {
+        console.log("WebSocket disconnected");
         if (pingIntervalId) {
             clearInterval(pingIntervalId);
         }
+    };
+
+    ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
     };
 
     ws.onmessage = (event: MessageEvent) => {

@@ -18,6 +18,17 @@ export type AuthResponse = {
     token: string;
 };
 
+/** Task types */
+export type Task = {
+    id: string;
+    userId: string;
+    title: string;
+    description?: string;
+    status: "todo" | "in_progress" | "done";
+    createdAt: string;
+    updatedAt: string;
+};
+
 /** WebSocket presence + latency */
 export type WebSocketWelcome = {
     type: "welcome";
@@ -38,10 +49,29 @@ export type WebSocketPresence = {
 export type WebSocketPong = { type: "pong"; t: number };
 export type WebSocketIncomingMessage = { type: "ping"; t: number };
 
+/** Task sync events */
+export type WebSocketTaskCreated = {
+    type: "task-created";
+    task: Task;
+};
+
+export type WebSocketTaskUpdated = {
+    type: "task-updated";
+    task: Task;
+};
+
+export type WebSocketTaskDeleted = {
+    type: "task-deleted";
+    taskId: string;
+};
+
 export type SocketServerMessage =
     | WebSocketWelcome
     | WebSocketPresence
-    | WebSocketPong;
+    | WebSocketPong
+    | WebSocketTaskCreated
+    | WebSocketTaskUpdated
+    | WebSocketTaskDeleted;
 
 /** Minimal CRDT (G-Counter) for auth events (monotonic). */
 export type GCounter = {
