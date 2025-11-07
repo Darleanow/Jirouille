@@ -6,9 +6,8 @@ import { initDB } from "./db";
 import { rateLimit } from "./security";
 import authRoutes from "./auth";
 import taskRoutes from "./tasks";
+import monitoringRoutes from "./monitoring";
 import { attachWebSocket } from "./ws";
-import { crdtSnapshot, crdtTotal } from "./crdt";
-import type { CRDTAuthSummary } from "./types";
 
 dotenv.config();
 const PORT = Number(process.env.PORT || 3001);
@@ -36,15 +35,7 @@ async function main() {
 
     app.use("/auth", authRoutes);
     app.use("/tasks", taskRoutes);
-
-    app.get("/monitoring/crdt-auth", (_req, res) => {
-        const payload: CRDTAuthSummary = {
-            type: "crdt-auth-summary",
-            total: crdtTotal(),
-            state: crdtSnapshot(),
-        };
-        res.json(payload);
-    });
+    app.use("/monitoring", monitoringRoutes);
 
     const server = http.createServer(app);
     attachWebSocket(server);
