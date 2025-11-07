@@ -18,6 +18,17 @@ export async function initDB() {
         createdAt TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS tasks (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'todo',
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY(userId) REFERENCES users(id)
+    );
+
     CREATE TABLE IF NOT EXISTS ws_sessions (
         id TEXT PRIMARY KEY,
         userId TEXT,
