@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { TasksAPI, Task } from "@/lib/api/tasks";
+import { connectWS } from "@/lib/ws";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { SocketServerMessage } from "@/lib/types";
 
 export default function DashboardPage() {
     const { user, logout, _hasHydrated } = useAuthStore();
@@ -13,6 +15,8 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
+    const [wsConnected, setWsConnected] = useState(false);
+    const wsRef = useRef<WebSocket | null>(null);
 
     const loadTasks = useCallback(async () => {
         if (!user) return;
@@ -24,6 +28,56 @@ export default function DashboardPage() {
         } finally {
             setLoading(false);
         }
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const handleMessage = (message: SocketServerMessage) => {
+            switch (message.type) {
+                case "welcome":
+                    setWsConnected(true);
+                    console.log("Connected as:", message.you.username);
+                    break;
+
+                case "task-created":
+                    console.log("Task created:", message.task);
+                    setTasks((prev) => {
+                        if (prev.some((t) => t.id === message.task.id))
+                            return prev;
+                        return [message.task, ...prev];
+                    });
+                    break;
+
+                case "task-updated":
+                    console.log("Task updated:", message.task);
+                    setTasks((prev) =>
+                        prev.map((t) =>
+                            t.id === message.task.id ? message.task : t
+                        )
+                    );
+                    break;
+
+                case "task-deleted":
+                    console.log("Task deleted:", message.taskId);
+                    setTasks((prev) =>
+                        prev.filter((t) => t.id !== message.taskId)
+                    );
+                    break;
+
+                case "presence":
+                    console.log("Connected users:", message.count);
+                    break;
+            }
+        };
+
+        const ws = connectWS(user.token, handleMessage);
+        wsRef.current = ws;
+
+        return () => {
+            setWsConnected(false);
+            ws.close();
+        };
     }, [user]);
 
     useEffect(() => {
@@ -42,7 +96,6 @@ export default function DashboardPage() {
             await TasksAPI.create({ title, description }, user.token);
             setTitle("");
             setDescription("");
-            loadTasks();
         } catch (e) {
             console.error(e);
         }
@@ -52,7 +105,6 @@ export default function DashboardPage() {
         if (!user) return;
         try {
             await TasksAPI.update(id, { status }, user.token);
-            loadTasks();
         } catch (e) {
             console.error(e);
         }
@@ -62,7 +114,6 @@ export default function DashboardPage() {
         if (!user) return;
         try {
             await TasksAPI.delete(id, user.token);
-            loadTasks();
         } catch (e) {
             console.error(e);
         }
@@ -79,9 +130,23 @@ export default function DashboardPage() {
         <main className="min-h-screen bg-muted p-8">
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold">
-                        Welcome, {user.username}
-                    </h1>
+                    <div>
+                        <h1 className="text-3xl font-bold">
+                            Welcome, {user.username}
+                        </h1>
+                        <div className="flex items-center gap-2 mt-2">
+                            <div
+                                className={`w-2 h-2 rounded-full ${
+                                    wsConnected ? "bg-green-500" : "bg-red-500"
+                                }`}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                                {wsConnected
+                                    ? "Real-time sync active"
+                                    : "Connecting..."}
+                            </span>
+                        </div>
+                    </div>
                     <Button variant="outline" onClick={handleLogout}>
                         Logout
                     </Button>
