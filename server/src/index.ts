@@ -5,6 +5,7 @@ import cors from "cors";
 import { initDB } from "./db";
 import { rateLimit } from "./security";
 import authRoutes from "./auth";
+import taskRoutes from "./tasks";
 import { attachWebSocket } from "./ws";
 import { crdtSnapshot, crdtTotal } from "./crdt";
 import type { CRDTAuthSummary } from "./types";
@@ -34,6 +35,7 @@ async function main() {
     );
 
     app.use("/auth", authRoutes);
+    app.use("/tasks", taskRoutes);
 
     app.get("/monitoring/crdt-auth", (_req, res) => {
         const payload: CRDTAuthSummary = {
