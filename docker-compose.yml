@@ -1,0 +1,11 @@
+services:
+  server:
+    build: ./server
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server/data:/usr/src/app/data   # SQLite db persistence
+    ports:
+      - "3001:3001"                      # Map server port to localhost
+    restart: unless-stopped
+
