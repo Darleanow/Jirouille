@@ -63,4 +63,31 @@ export const http = {
 
         return request<T>(path, init);
     },
+    put: <T>(path: string, body?: unknown, token?: string) => {
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        const init: RequestInit = {
+            method: "PUT",
+            headers,
+        };
+
+        if (body !== undefined) {
+            init.body = JSON.stringify(body);
+        }
+
+        return request<T>(path, init);
+    },
+    delete: <T>(path: string, token?: string) =>
+        request<T>(path, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+        }),
 };
