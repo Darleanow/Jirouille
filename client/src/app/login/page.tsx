@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,18 @@ export default function LoginPage() {
     const [password, setP] = useState("");
     const { login, loading, error } = useAuthStore();
     const router = useRouter();
+    const { user, _hasHydrated } = useAuthStore();
+
+    useEffect(() => {
+        if (_hasHydrated && user) {
+            router.push("/dashboard");
+        }
+    }, [_hasHydrated, user, router]);
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         await login({ username, password });
-        router.push("/"); // or dashboard route
+        router.push("/dashboard");
     };
 
     return (
