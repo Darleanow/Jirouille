@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SocketServerMessage } from "@/lib/types";
 
+type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
+
 export default function DashboardPage() {
     const { user, logout, _hasHydrated } = useAuthStore();
     const router = useRouter();
@@ -15,8 +17,8 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [wsConnected, setWsConnected] = useState(false);
-    const wsRef = useRef<WebSocket | null>(null);
+    const [wsStatus, setWsStatus] = useState<ConnectionStatus>("disconnected");
+    const disconnectRef = useRef<(() => void) | null>(null);
 
     const loadTasks = useCallback(async () => {
         if (!user) return;
@@ -36,7 +38,6 @@ export default function DashboardPage() {
         const handleMessage = (message: SocketServerMessage) => {
             switch (message.type) {
                 case "welcome":
-                    setWsConnected(true);
                     console.log("Connected as:", message.you.username);
                     break;
 
@@ -71,12 +72,19 @@ export default function DashboardPage() {
             }
         };
 
-        const ws = connectWS(user.token, handleMessage);
-        wsRef.current = ws;
+        const handleStatusChange = (status: ConnectionStatus) => {
+            setWsStatus(status);
+        };
+
+        const { disconnect, forceDisconnect } = connectWS(
+            user.token,
+            handleMessage,
+            handleStatusChange
+        );
+        disconnectRef.current = forceDisconnect;
 
         return () => {
-            setWsConnected(false);
-            ws.close();
+            disconnect();
         };
     }, [user]);
 
@@ -124,7 +132,22 @@ export default function DashboardPage() {
         router.push("/login");
     };
 
+    const testReconnect = () => {
+        if (disconnectRef.current) {
+            console.log("Testing reconnection...");
+            disconnectRef.current();
+        }
+    };
+
     if (!_hasHydrated || !user) return null;
+
+    const statusConfig = {
+        connected: { color: "bg-green-500", text: "Real-time sync active" },
+        reconnecting: { color: "bg-yellow-500", text: "Reconnecting..." },
+        disconnected: { color: "bg-red-500", text: "Disconnected" },
+    };
+
+    const currentStatus = statusConfig[wsStatus];
 
     return (
         <main className="min-h-screen bg-muted p-8">
@@ -136,15 +159,21 @@ export default function DashboardPage() {
                         </h1>
                         <div className="flex items-center gap-2 mt-2">
                             <div
-                                className={`w-2 h-2 rounded-full ${
-                                    wsConnected ? "bg-green-500" : "bg-red-500"
-                                }`}
+                                className={`w-2 h-2 rounded-full ${currentStatus.color}`}
                             />
                             <span className="text-sm text-muted-foreground">
-                                {wsConnected
-                                    ? "Real-time sync active"
-                                    : "Connecting..."}
+                                {currentStatus.text}
                             </span>
+                            {process.env.NODE_ENV === "development" && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={testReconnect}
+                                    className="ml-2"
+                                >
+                                    Test Reconnect
+                                </Button>
+                            )}
                         </div>
                     </div>
                     <Button variant="outline" onClick={handleLogout}>
